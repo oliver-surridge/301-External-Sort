@@ -1,5 +1,5 @@
 This project implements a balanced 2-way sort merge
-Usage: cat <inputText> | java XSort <initialRunsLength> 2 > <nameOfOutputFile>
+Usage: cat 'inputText' | java XSort 'initialRunsLength' 2 > 'nameOfOutputFile'
 
 If the first argument is not provided, the output file will still be created but only the initial
 runs will be displayed as noted at the top of the document.
