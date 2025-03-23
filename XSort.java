@@ -1,18 +1,28 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
+/**
+ * Perform a 2 Way External Merge Sort
+ * @author Oliver Surridge - ID: 1607940
+ */
+import java.io.*;
+import java.util.*;
 
 public class XSort {
 
-    public static void main(String[] args) {
-        // String[] text = {"banana", "apple", "cherry", "mango", "blueberry"};
-        // BuildMaxHeap(text);
+    public static void main(String[] args) throws IOException{
+        //Init the temp files
+        File temp1 = File.createTempFile("sort1", ".tmp");
+        File temp2 = File.createTempFile("sort2", ".tmp");
+        temp1.deleteOnExit();
+        temp2.deleteOnExit();
 
-        // //print the array
-        // for (String s : text) {
-        //     System.out.print(s + " ");
-        // }
+        //Init files used for merge
+        File fileA = temp1;
+        File fileB = temp2;
+        File fileC = File.createTempFile("sort3", ".tmp");
+        File fileD = File.createTempFile("sort4", ".tmp");
+        fileC.deleteOnExit();
+        fileD.deleteOnExit();
+                
+        int runSize = 0;
 
         //error checking and taking in inputs
         if(args.length < 1 || args.length > 2){
@@ -21,7 +31,6 @@ public class XSort {
         }
         
         //validate the first input
-        int runSize = 0; //hold the runSize entered
         try{
             runSize = Integer.parseInt(args[0]);
             if(runSize < 64 || runSize > 1024){
@@ -32,12 +41,11 @@ public class XSort {
             System.err.println("runSize must be of an integer value");
             System.exit(1);
         }
-
-        //validate the second input
+        
         boolean mergeWay = false; 
         if(args.length == 2){
             if(args[1].equals("2")){
-                mergeWay = true;
+                mergeWay = true; //we need to merge
             } else{
                 //if mergeWay entered is not 2, we cannot merge
                 System.err.println("mergeWay has only been implemented for 2 way");
@@ -45,30 +53,51 @@ public class XSort {
             }
         }
         
+
         try {
-            createInitRuns(runSize);
-            //Merge
+            //If second argument is provided, merge
             if(mergeWay){
-                System.err.println("Merging not yet implemented");
+                createInitRuns(runSize, temp1, temp2);
+                
+                while(true){
+                    mergeRuns(fileA, fileB, fileC, fileD);
+
+                    if(isFileEmpty(fileC) || isFileEmpty(fileD)){
+                        File sortedFile;
+                        if (isFileEmpty(fileC)) {
+                            sortedFile = fileD;
+                        } else {
+                            sortedFile = fileC;
+                        }
+                        printSortedFile(sortedFile);
+                        break;
+                    }
+                }
+            } else{
+                System.out.println("No merging was requested so initial runs follow:"+"\n");
+                createInitRuns(runSize, temp1, temp2);
             }
         } catch (IOException e) {
-            System.err.println("I/O error: " + e.getMessage());
+            System.err.println(e.getMessage());
             System.exit(1);
-        }     
+        } 
     }
 
     /**
      * produce runs for each line of size (runSize)
      * @param runSize size for each run
      */
-    public static void createInitRuns(int size) throws IOException{
+    public static void createInitRuns(int size, File temp1, File temp2) throws IOException{
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String line = "";
         ArrayList<String> buffer = new ArrayList<>(); //used to temp store text for a run
+        BufferedWriter writer1 = new BufferedWriter(new FileWriter(temp1));
+        BufferedWriter writer2 = new BufferedWriter(new FileWriter(temp2));
+
+        boolean writeToFirst = true; //used to toggle between each temp file
 
         //infinite while loop
         while(true){
-
             //clear the buffer for a new run
             buffer.clear();
 
@@ -88,15 +117,118 @@ public class XSort {
             //sort the run
             BuildMaxHeap(runArray);
 
-            //output the run
-            for(String sortedLine : runArray){
-                System.out.println(sortedLine);
+            BufferedWriter writer; 
+            if(writeToFirst){
+                writer = writer1;
+            }else{
+                writer = writer2;
             }
 
+            //write to alternating files
+            for(String sortedLine : runArray){
+                writer.write(sortedLine);
+                writer.newLine();
+            }
+            writer.flush();
+            writeToFirst = !writeToFirst; //toggle temp file
+            
+            // //output the initial runs
+            // for(String sortedLine : runArray){
+            //     System.out.println(sortedLine);
+            // }
+           
             if(line == null){
                 break;
             }
         }
+        reader.close();
+        writer1.close();
+        writer2.close();
+    }
+    /**
+     * Perform a 2 way merge
+     * @param input1 file1 of initial runs
+     * @param input2 file2 of initial runs
+     * @param output1 file3 to use as output
+     * @param output2 file4 to use as output
+     * @throws IOException
+     */
+    public static void mergeRuns(File input1, File input2, File output1, File output2) throws IOException{
+        //open temp1 and temp2 to read
+        BufferedReader reader1 = new BufferedReader(new FileReader(input1));
+        BufferedReader reader2 = new BufferedReader(new FileReader(input2));
+        BufferedWriter writer1 = new BufferedWriter(new FileWriter(output1));
+        BufferedWriter writer2 = new BufferedWriter(new FileWriter(output2));
+
+        boolean writeToFirst = true; //used to alternate between output 1 and 2
+        
+        String line1 = reader1.readLine();
+        String line2 = reader2.readLine();
+        
+        while(line1 != null || line2 != null){
+            List <String> mergedRun = new ArrayList<>();
+            
+            //merge a run from each file
+            while (line1 != null && line2 != null){
+                if(line1.compareTo(line2) <= 0){ //if line1 is the same or lower in dictionary order to line2
+                    mergedRun.add(line1);
+                    line1 = reader1.readLine(); //move to next line
+                } else{
+                    mergedRun.add(line2);
+                    line2 = reader2.readLine();
+                }
+            }
+
+            //check for remaining lines if none in another
+            while(line1 != null /*&& !line1.isEmpty()*/){
+                mergedRun.add(line1);
+                line1 = reader1.readLine();
+            }
+            while(line2 != null /*&& !line2.isEmpty()*/){
+                mergedRun.add(line2);
+                line2 = reader2.readLine();
+            }
+
+            BufferedWriter writer; 
+            if(writeToFirst){
+                writer = writer1;
+            }else{
+                writer = writer2;
+            }
+
+             //write to alternating files
+            for (String sortedLine : mergedRun) {
+                writer.write(sortedLine);
+                writer.newLine();
+            }
+
+            writer1.flush();
+            writeToFirst = !writeToFirst; //toggle
+        }
+
+        reader1.close();
+        reader2.close();
+        writer1.close();
+        writer2.close();
+
+    }
+    /**
+     * checks whether a file is empty
+     * @param file
+     * @return true if empty
+     * @throws IOException
+     */
+    public static boolean isFileEmpty(File file) throws IOException {
+        return file.length() == 0;
+    }
+
+    public static void printSortedFile(File sortedFile) throws IOException{
+        BufferedReader reader = new BufferedReader(new FileReader(sortedFile));
+        String line;
+        while((line = reader.readLine()) != null){
+            System.out.println(line);
+        }
+        reader.close();
     }
 
     /**
@@ -161,9 +293,5 @@ public class XSort {
         array[firstElement] = array [secondElement];
         array[secondElement] = temp;
     }
-
-
-    
-
 
 }
