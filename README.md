@@ -1,3 +1,6 @@
+Oliver Surridge
+1607940
+
 This project implements a balanced 2-way sort merge
 Usage: cat 'inputText' | java XSort 'initialRunsLength' 2 > 'nameOfOutputFile'
 
