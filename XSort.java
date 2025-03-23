@@ -57,7 +57,7 @@ public class XSort {
         try {
             //If second argument is provided, merge
             if(mergeWay){
-                createInitRuns(runSize, temp1, temp2);
+                createInitRuns(runSize, temp1, temp2, mergeWay);
                 
                 while(true){
                     mergeRuns(fileA, fileB, fileC, fileD);
@@ -74,8 +74,8 @@ public class XSort {
                     }
                 }
             } else{
-                System.out.println("No merging was requested so initial runs follow:"+"\n");
-                createInitRuns(runSize, temp1, temp2);
+                System.out.println("No merging was requested so heap sorted initial runs follow:"+"\n");
+                createInitRuns(runSize, temp1, temp2, mergeWay);
             }
         } catch (IOException e) {
             System.err.println(e.getMessage());
@@ -87,7 +87,7 @@ public class XSort {
      * produce runs for each line of size (runSize)
      * @param runSize size for each run
      */
-    public static void createInitRuns(int size, File temp1, File temp2) throws IOException{
+    public static void createInitRuns(int size, File temp1, File temp2, boolean merge) throws IOException{
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String line = "";
         ArrayList<String> buffer = new ArrayList<>(); //used to temp store text for a run
@@ -95,7 +95,7 @@ public class XSort {
         BufferedWriter writer2 = new BufferedWriter(new FileWriter(temp2));
 
         boolean writeToFirst = true; //used to toggle between each temp file
-
+        
         //infinite while loop
         while(true){
             //clear the buffer for a new run
@@ -132,10 +132,13 @@ public class XSort {
             writer.flush();
             writeToFirst = !writeToFirst; //toggle temp file
             
-            // //output the initial runs
-            // for(String sortedLine : runArray){
-            //     System.out.println(sortedLine);
-            // }
+            //output the initial runs if second argument isnt given
+            if(!merge){
+                for(String sortedLine : runArray){
+                    System.out.println(sortedLine);
+                }
+            }
+            
            
             if(line == null){
                 break;
